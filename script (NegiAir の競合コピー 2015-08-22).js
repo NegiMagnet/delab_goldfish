@@ -32,7 +32,7 @@ tm.main(function() {
 		SCREEN_WIDTH  = 800;
 		SCREEN_HEIGHT = SCREEN_WIDTH * window.innerHeight / window.innerWidth;
 	}
-//	alert(window.innerWidth + " " + window.innerHeight);
+	alert(window.innerWidth + " " + window.innerHeight);
 
 	var app = tm.display.CanvasApp("#world");
 	app.resize(SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -42,8 +42,8 @@ tm.main(function() {
 		assets: ASSETS,
 		width: SCREEN_WIDTH,
 		height: SCREEN_HEIGHT,
-		nextScene: SceneTitle
-//		nextScene: SceneMain
+//		nextScene: SceneTitle
+		nextScene: SceneMain
 	});
 
 	app.replaceScene(ScLoadAsset);
@@ -89,15 +89,6 @@ tm.define("SceneMain", {
 				v.normalize().dot(tm.geom.Vector2.UP)/2
 			);
 		});
-
-		// ブラックアウトからの復帰演出
-		var rect = tm.display.RectangleShape(SCREEN_WIDTH, SCREEN_HEIGHT)
-			.addChildTo(this)
-			.setPosition(SCREEN_WIDTH/2, SCREEN_HEIGHT/2)
-			.setAlpha(1.0);
-		rect.canvas.clearColor("black");
-		rect.tweener.clear()
-			.to({alpha:0.0}, 500);
 	},
 
 	update: function(app) {
@@ -339,14 +330,7 @@ tm.define("SceneTutorial", {
 	},
 
 	onpointingstart : function(e) {
-		var rect = tm.display.RectangleShape(SCREEN_WIDTH, SCREEN_HEIGHT)
-			.addChildTo(this)
-			.setPosition(SCREEN_WIDTH/2, SCREEN_HEIGHT/2)
-			.setAlpha(0.0);
-		rect.canvas.clearColor("black");
-		rect.tweener.clear()
-			.to({alpha:1.0}, 500)
-			.call(function() { e.app.replaceScene(SceneMain()); });
+		e.app.replaceScene(SceneMain());
 	},
 });
 
