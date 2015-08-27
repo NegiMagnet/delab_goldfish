@@ -21,6 +21,7 @@ var ASSETS = {
 	"field" : SRC_PATH + "field.png",
 	"tutorial" : SRC_PATH + "tutorial.png",
 	"poi" : SRC_PATH + "poi.png",
+	"countdown" : SRC_PATH + "countdown.png",
 };
 
 // エントリポイント
@@ -55,13 +56,26 @@ tm.define("SceneMain", {
 	
 	superClass: "tm.app.Scene",
 
+	isEnableUpdate : false,
+
+	// 画面中央のワールド座標
+	cameraX : 0,
+	cameraY : 0,
+	cameraSpeed : 5.0,
+
 	init: function() {
 		this.superInit();
 
+		var self = this;
+		this.cameraX = FIELD_WIDTH/2;
+		this.cameraY = FIELD_HEIGHT/2;
+
+		// フィールド(背景)
 		this.field = new Field();
 		this.field.addChildTo(this);
 		this.field.setPositionLU(0, 0);
-
+/*
+		// 金魚(操作可能)
 		this.fish = new Fish();
 		this.fish.addChildTo(this);
 		this.fish.posx = SCREEN_WIDTH/2;
@@ -69,7 +83,12 @@ tm.define("SceneMain", {
 		this.fish.velx = 0.0;
 		this.fish.vely = 0.0;
 		this.fish.setPosition(this.fish.posx, this.fish.posy);
+*/
+		// プレイヤー(ポイ)
+		this.player = new Player();
+		this.player.addChildTo(this);
 
+		// 金魚AI
 		this.fishAI = new Array(FISH_NUMS);
 		for(i=0; i<FISH_NUMS; i++) {
 			this.fishAI[i] = new FishAI();
@@ -78,7 +97,9 @@ tm.define("SceneMain", {
 			this.fishAI[i].posy = FIELD_HEIGHT * Math.random();
 		}
 
+		// タッチされたときの挙動
 		this.addEventListener("pointingmove", function(e) {
+			/*
 			// タッチ位置の方向にプレイヤーを動かす
 			v = tm.geom.Vector2(
 				e.app.pointing.x - this.fish.getScrX(),
@@ -88,6 +109,7 @@ tm.define("SceneMain", {
 				v.normalize().dot(tm.geom.Vector2.RIGHT)/2,
 				v.normalize().dot(tm.geom.Vector2.UP)/2
 			);
+		   */
 		});
 
 		// ブラックアウトからの復帰演出
@@ -97,27 +119,107 @@ tm.define("SceneMain", {
 			.setAlpha(1.0);
 		rect.canvas.clearColor("black");
 		rect.tweener.clear()
-			.to({alpha:0.0}, 500);
+			.to({alpha:0.0}, 500)
+			.call(function() {
+				// カウントダウン
+				self.countdown = new Countdown();
+				self.countdown.addChildTo(self);
+				self.countdown.setPosition(SCREEN_WIDTH/2, SCREEN_HEIGHT/2);
+				self.countdown.gotoAndPlay("count3");
+			})
+			.wait(1000)
+			.call(function() {
+				self.countdown.gotoAndStop("count2");
+			})
+			.wait(1000)
+			.call(function() {
+				self.countdown.gotoAndStop("count1");
+			})
+			.wait(1000)
+			.call(function() {
+				self.countdown.gotoAndStop("count0");
+			})
+			.wait(1000)
+			.call(function() {
+				// アップデート開始
+				self.countdown.setVisible(false);
+				this.isEnableUpdate = true;
+			});
 	},
 
 	update: function(app) {
-		this.fish.update();
+//		this.fish.update();
 		for(i=0; i<FISH_NUMS; i++) {
 			this.fishAI[i].update();
 		}
-
+/*
 		var fx = -clamp(0, this.fish.posx - SCREEN_WIDTH/2,  FIELD_WIDTH - SCREEN_WIDTH);
 		var fy = -clamp(0, this.fish.posy - SCREEN_HEIGHT/2, FIELD_HEIGHT - SCREEN_HEIGHT);
 		this.field.setPositionLU(fx, fy);
 		this.fish.setPos();
+*/
+		var px = app.pointing.x;
+		var py = app.pointing.y;
+		/*
+		if(px < SCREEN_WIDTH/8) {
+			this.cameraX = Math.max(0, this.cameraX-this.cameraSpeed);
+		} else if(SCREEN_WIDTH*7/8 < px) {
+			this.cameraX = Math.min(FIELD_WIDTH-SCREEN_WIDTH/2, this.cameraX+this.cameraSpeed);
+		}
+		if(py < SCREEN_HEIGHT/8) {
+			this.cameraY = Math.max(0, this.cameraY-this.cameraSpeed);
+		} else if(SCREEN_HEIGHT*7/8 < py) {
+			this.cameraY = Math.min(FIELD_HEIGHT-SCREEN_HEIGHT/2, this.cameraY+this.cameraSpeed);
+		}
+*/
+		if(px < SCREEN_WIDTH/8  || SCREEN_WIDTH*7/8  < px ||
+		   py < SCREEN_HEIGHT/8 || SCREEN_HEIGHT*7/8 < py ) {
+			var dx = px - SCREEN_WIDTH/2;
+			var dy = py - SCREEN_HEIGHT/2;
+			var v = tm.geom.Vector2(dx, dy).normalize();
+			this.cameraX = clamp(SCREEN_WIDTH/2, this.cameraX+v.dot(tm.geom.Vector2.RIGHT)*this.cameraSpeed, FIELD_WIDTH-SCREEN_WIDTH/2);
+			this.cameraY = clamp(SCREEN_HEIGHT/2, this.cameraY+v.dot(tm.geom.Vector2.UP)*this.cameraSpeed, FIELD_HEIGHT-SCREEN_HEIGHT/2);
+		}
+
+		var fx = FIELD_WIDTH/2 - this.cameraX + SCREEN_WIDTH/2;
+		var fy = FIELD_HEIGHT/2 - this.cameraY + SCREEN_HEIGHT/2;
+		this.field.setPosition(fx, fy);
+		this.player.setPosition(px, py);
 
 		for(i=0; i<FISH_NUMS; i++) {
-			var ai_px = this.fish.getScrX() + this.fishAI[i].posx - this.fish.posx;
-			var ai_py = this.fish.getScrY() + this.fishAI[i].posy - this.fish.posy;
+			var ai_px = this.fishAI[i].posx - this.cameraX;
+			var ai_py = this.fishAI[i].posy - this.cameraY;
 			this.fishAI[i].setPos(ai_px, ai_py);
 		}
+
 	}
+
 });
+
+// プレイヤー
+tm.define("Player", {
+	superClass: "tm.app.AnimationSprite",
+
+	init: function() {
+		var ss = tm.asset.SpriteSheet({
+			image : "poi",
+			frame : {
+				width : 100,
+				height : 100,
+				count : 2
+			},
+			animations : {
+				"normal" : [0, 1, "normal"],
+				"sink" : [0, 1, "sink"],
+			}
+		});
+		this.superInit(ss, 100, 100);
+		this.gotoAndPlay("normal");
+
+		this.setScale(2.0, 2.0);
+	},
+});
+
 
 // 金魚
 tm.define("Fish", {
@@ -365,4 +467,26 @@ tm.define("SceneReady", {
 	},
 });
 
+// カウントダウンタイマー
+tm.define("Countdown", {
+	superClass: "tm.app.AnimationSprite",
+
+	init : function() {
+		var ss = tm.asset.SpriteSheet({
+			image : "countdown",
+			frame : {
+				width : 100,
+				height : 100,
+				count : 4,
+			},
+			animations : {
+				"count3" : [0, 1, "count3"],
+				"count2" : [1, 2, "count2"],
+				"count1" : [2, 3, "count1"],
+				"count0" : [3, 0, "count0"],
+			}
+		});
+		this.superInit(ss, 100, 100);
+	},
+});
 
