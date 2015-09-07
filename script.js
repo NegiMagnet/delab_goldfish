@@ -22,6 +22,7 @@ var ASSETS = {
 	"tutorial" : SRC_PATH + "tutorial.png",
 	"poi" : SRC_PATH + "poi.png",
 	"countdown" : SRC_PATH + "countdown.png",
+	"number" : SRC_PATH + "number.png",
 };
 
 // エントリポイント
@@ -63,12 +64,16 @@ tm.define("SceneMain", {
 	cameraY : 0,
 	cameraSpeed : 5.0,
 
+	// 経過時間
+	timer: 0,
+
 	init: function() {
 		this.superInit();
 
 		var self = this;
 		this.cameraX = FIELD_WIDTH/2;
 		this.cameraY = FIELD_HEIGHT/2;
+		this.timer = 0;
 
 		// フィールド(背景)
 		this.field = new Field();
@@ -96,6 +101,17 @@ tm.define("SceneMain", {
 			this.fishAI[i].posx = FIELD_WIDTH * Math.random();
 			this.fishAI[i].posy = FIELD_HEIGHT * Math.random();
 		}
+
+		// タイマー
+		this.timerNum10 = new NumberImage();
+		this.timerNum10.addChildTo(this);
+		this.timerNum10.setNumber(6);
+		this.timerNum10.setPosition(SCREEN_WIDTH/2-25, 50);
+
+		this.timerNum1 = new NumberImage();
+		this.timerNum1.addChildTo(this);
+		this.timerNum1.setNumber(0);
+		this.timerNum1.setPosition(SCREEN_WIDTH/2+25, 50);
 
 		// タッチされたときの挙動
 		this.addEventListener("pointingmove", function(e) {
@@ -125,7 +141,7 @@ tm.define("SceneMain", {
 				self.countdown = new Countdown();
 				self.countdown.addChildTo(self);
 				self.countdown.setPosition(SCREEN_WIDTH/2, SCREEN_HEIGHT/2);
-				self.countdown.gotoAndPlay("count3");
+				self.countdown.gotoAndStop("count3");
 			})
 			.wait(1000)
 			.call(function() {
@@ -143,11 +159,19 @@ tm.define("SceneMain", {
 			.call(function() {
 				// アップデート開始
 				self.countdown.setVisible(false);
-				this.isEnableUpdate = true;
+				self.isEnableUpdate = true;
 			});
 	},
 
 	update: function(app) {
+
+		if( this.isEnableUpdate ) {
+			this.timer++;
+			var time = Math.max(60 - Math.floor(this.timer/30), 0);
+			this.timerNum10.setNumber(Math.floor(time/10));
+			this.timerNum1.setNumber(time%10);
+		}
+
 //		this.fish.update();
 		for(i=0; i<FISH_NUMS; i++) {
 			this.fishAI[i].update();
@@ -487,6 +511,50 @@ tm.define("Countdown", {
 			}
 		});
 		this.superInit(ss, 100, 100);
+	},
+});
+
+// 数字
+tm.define("NumberImage", {
+	superClass: "tm.app.AnimationSprite",
+
+	init: function() {
+		var ss = tm.asset.SpriteSheet({
+			image : "number",
+			frame : {
+				width: 50,
+				height: 100,
+				count: 10,
+			},
+			animations : {
+				"0" : [0, 1, "0"],
+				"1" : [1, 2, "1"],
+				"2" : [2, 3, "2"],
+				"3" : [3, 4, "3"],
+				"4" : [4, 5, "4"],
+				"5" : [5, 6, "5"],
+				"6" : [6, 7, "6"],
+				"7" : [7, 8, "7"],
+				"8" : [8, 9, "8"],
+				"9" : [9, 0, "9"],
+			}
+		});
+		this.superInit(ss, 50, 100);
+	},
+
+	setNumber : function(n) {
+		switch(n) {
+			case 0: this.gotoAndStop("0"); break;
+			case 1: this.gotoAndStop("1"); break;
+			case 2: this.gotoAndStop("2"); break;
+			case 3: this.gotoAndStop("3"); break;
+			case 4: this.gotoAndStop("4"); break;
+			case 5: this.gotoAndStop("5"); break;
+			case 6: this.gotoAndStop("6"); break;
+			case 7: this.gotoAndStop("7"); break;
+			case 8: this.gotoAndStop("8"); break;
+			case 9: this.gotoAndStop("9"); break;
+		}
 	},
 });
 
