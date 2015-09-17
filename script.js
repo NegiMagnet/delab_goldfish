@@ -92,6 +92,9 @@ tm.define("SceneMain", {
 		// プレイヤー(ポイ)
 		this.player = new Player();
 		this.player.addChildTo(this);
+		// プレイヤー(沈んだポイ)
+		this.player_a = new PlayerActive();
+		this.player_a.addChildTo(this);
 
 		// 金魚AI
 		this.fishAI = new Array(FISH_NUMS);
@@ -115,6 +118,8 @@ tm.define("SceneMain", {
 
 		// タッチされたときの挙動
 		this.addEventListener("pointingmove", function(e) {
+                  this.player.hide();
+                  this.player_a.show();
 			/*
 			// タッチ位置の方向にプレイヤーを動かす
 			v = tm.geom.Vector2(
@@ -209,6 +214,9 @@ tm.define("SceneMain", {
 		var fy = FIELD_HEIGHT/2 - this.cameraY + SCREEN_HEIGHT/2;
 		this.field.setPosition(fx, fy);
 		this.player.setPosition(px, py);
+		this.player_a.setPosition(px, py);
+                this.player.show();
+                this.player_a.hide();
 
 		for(i=0; i<FISH_NUMS; i++) {
 			var ai_px = this.fishAI[i].posx - this.cameraX;
@@ -227,6 +235,31 @@ tm.define("Player", {
 	init: function() {
 		var ss = tm.asset.SpriteSheet({
 			image : "poi",
+			frame : {
+				width : 100,
+				height : 100,
+				count : 2
+			},
+			animations : {
+				"normal" : [0, 1, "normal"],
+				"sink" : [0, 1, "sink"],
+			}
+		});
+		this.superInit(ss, 100, 100);
+		this.gotoAndPlay("normal");
+
+		this.setScale(2.0, 2.0);
+	},
+});
+
+// 水に沈んだ状態のポイ
+tm.define("PlayerActive", {
+	superClass: "tm.app.AnimationSprite",
+
+	init: function() {
+		var ss = tm.asset.SpriteSheet({
+                        // TODO: 画像差し替え
+			image : "fish",
 			frame : {
 				width : 100,
 				height : 100,
