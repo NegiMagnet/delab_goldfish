@@ -29,9 +29,9 @@ var ASSETS = {
 tm.main(function() {
 	if(window.innerHeight < window.innerWidth) {
 		SCREEN_HEIGHT = 800;
-		SCREEN_WIDTH  = SCREEN_HEIGHT * window.innerWidth / window.innerHeight;
+		SCREEN_WIDTH = SCREEN_HEIGHT * window.innerWidth / window.innerHeight;
 	} else {
-		SCREEN_WIDTH  = 800;
+		SCREEN_WIDTH = 800;
 		SCREEN_HEIGHT = SCREEN_WIDTH * window.innerHeight / window.innerWidth;
 	}
 //	alert(window.innerWidth + " " + window.innerHeight);
@@ -89,13 +89,6 @@ tm.define("SceneMain", {
 		this.fish.vely = 0.0;
 		this.fish.setPosition(this.fish.posx, this.fish.posy);
 */
-		// プレイヤー(ポイ)
-		this.player = new Player();
-		this.player.addChildTo(this);
-		// プレイヤー(沈んだポイ)
-		this.player_a = new PlayerActive();
-		this.player_a.addChildTo(this);
-
 		// 金魚AI
 		this.fishAI = new Array(FISH_NUMS);
 		for(i=0; i<FISH_NUMS; i++) {
@@ -105,7 +98,11 @@ tm.define("SceneMain", {
 			this.fishAI[i].posy = FIELD_HEIGHT * Math.random();
 		}
 
-		// タイマー
+		// プレイヤー(ポイ)
+		this.player = new Player();
+		this.player.addChildTo(this);
+
+				// タイマー
 		this.timerNum10 = new NumberImage();
 		this.timerNum10.addChildTo(this);
 		this.timerNum10.setNumber(6);
@@ -115,11 +112,8 @@ tm.define("SceneMain", {
 		this.timerNum1.addChildTo(this);
 		this.timerNum1.setNumber(0);
 		this.timerNum1.setPosition(SCREEN_WIDTH/2+25, 50);
-
-		// タッチされたときの挙動
 		this.addEventListener("pointingmove", function(e) {
-                  this.player.hide();
-                  this.player_a.show();
+
 			/*
 			// タッチ位置の方向にプレイヤーを動かす
 			v = tm.geom.Vector2(
@@ -130,7 +124,7 @@ tm.define("SceneMain", {
 				v.normalize().dot(tm.geom.Vector2.RIGHT)/2,
 				v.normalize().dot(tm.geom.Vector2.UP)/2
 			);
-		   */
+			 */
 		});
 
 		// ブラックアウトからの復帰演出
@@ -182,7 +176,7 @@ tm.define("SceneMain", {
 			this.fishAI[i].update();
 		}
 /*
-		var fx = -clamp(0, this.fish.posx - SCREEN_WIDTH/2,  FIELD_WIDTH - SCREEN_WIDTH);
+		var fx = -clamp(0, this.fish.posx - SCREEN_WIDTH/2, FIELD_WIDTH - SCREEN_WIDTH);
 		var fy = -clamp(0, this.fish.posy - SCREEN_HEIGHT/2, FIELD_HEIGHT - SCREEN_HEIGHT);
 		this.field.setPositionLU(fx, fy);
 		this.fish.setPos();
@@ -201,8 +195,8 @@ tm.define("SceneMain", {
 			this.cameraY = Math.min(FIELD_HEIGHT-SCREEN_HEIGHT/2, this.cameraY+this.cameraSpeed);
 		}
 */
-		if(px < SCREEN_WIDTH/8  || SCREEN_WIDTH*7/8  < px ||
-		   py < SCREEN_HEIGHT/8 || SCREEN_HEIGHT*7/8 < py ) {
+		if(px < SCREEN_WIDTH/8	|| SCREEN_WIDTH*7/8 < px ||
+			 py < SCREEN_HEIGHT/8 || SCREEN_HEIGHT*7/8 < py ) {
 			var dx = px - SCREEN_WIDTH/2;
 			var dy = py - SCREEN_HEIGHT/2;
 			var v = tm.geom.Vector2(dx, dy).normalize();
@@ -214,23 +208,35 @@ tm.define("SceneMain", {
 		var fy = FIELD_HEIGHT/2 - this.cameraY + SCREEN_HEIGHT/2;
 		this.field.setPosition(fx, fy);
 		this.player.setPosition(px, py);
-		this.player_a.setPosition(px, py);
-                this.player.show();
-                this.player_a.hide();
 
 		for(i=0; i<FISH_NUMS; i++) {
 			var ai_px = this.fishAI[i].posx - this.cameraX;
 			var ai_py = this.fishAI[i].posy - this.cameraY;
 			this.fishAI[i].setPos(ai_px, ai_py);
 		}
+	},
 
+	onpointingstart: function(app) {
+		this.player.sink(true);
+
+		var firstFish = this.fishAI[0];
+		var index = this.getChildAt(firstFish);
+		this.addChildAt(this.player, index);
+	},
+
+	onpointingend: function(app) {
+		this.player.sink(false);
+
+		var lastFish = this.fishAI[this.fishAI.length-1];
+		var index = this.getChildAt(lastFish);
+		this.addChildAt(this.player, index);
 	}
-
 });
 
 // プレイヤー
 tm.define("Player", {
 	superClass: "tm.app.AnimationSprite",
+	isActive : false,
 
 	init: function() {
 		var ss = tm.asset.SpriteSheet({
@@ -242,7 +248,7 @@ tm.define("Player", {
 			},
 			animations : {
 				"normal" : [0, 1, "normal"],
-				"sink" : [0, 1, "sink"],
+				"sink" : [1, 0, "sink"],
 			}
 		});
 		this.superInit(ss, 100, 100);
@@ -250,33 +256,17 @@ tm.define("Player", {
 
 		this.setScale(2.0, 2.0);
 	},
-});
 
-// 水に沈んだ状態のポイ
-tm.define("PlayerActive", {
-	superClass: "tm.app.AnimationSprite",
-
-	init: function() {
-		var ss = tm.asset.SpriteSheet({
-                        // TODO: 画像差し替え
-			image : "fish",
-			frame : {
-				width : 100,
-				height : 100,
-				count : 2
-			},
-			animations : {
-				"normal" : [0, 1, "normal"],
-				"sink" : [0, 1, "sink"],
-			}
-		});
-		this.superInit(ss, 100, 100);
-		this.gotoAndPlay("normal");
-
-		this.setScale(2.0, 2.0);
+	sink: function(flag) {
+		this.isSinked = flag;
+		this.gotoAndPlay(flag ? "sink" : "normal");
 	},
-});
 
+	isSinked: function() {
+		return this.isSinked;
+	}
+
+});
 
 // 金魚
 tm.define("Fish", {
