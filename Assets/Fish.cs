@@ -40,6 +40,7 @@ public class Fish : MonoBehaviour {
 	private int _kind;
 	public const int KIND_NORMAL = 0;
 	public const int KIND_FAST = 1;
+	public const int KIND_NUMS = 2;
 	public void setKind(int k) {
 		_kind = k;
 		if(k == KIND_NORMAL) {
@@ -55,8 +56,12 @@ public class Fish : MonoBehaviour {
 		}
 	}
 
-	public void getScore() {
-		;
+	public int getScore() {
+		if( _kind == KIND_NORMAL ) {
+			return 10;
+		} else {
+			return 30;
+		}
 	}
 
 	private IEnumerator UpdateCoroutine() {
@@ -85,7 +90,7 @@ public class Fish : MonoBehaviour {
 			float vel = _vel;
 			if( _escapeTime > 0.0f ) {
 				_escapeTime -= Time.deltaTime;
-				vel *= 10.0f;
+				vel *= 8.0f;
 			}
 			Vector3 p = transform.position + transform.forward * vel;
 			transform.position = new Vector3( Mathf.Clamp(p.x, -8.0f, 8.0f), -1.0f, Mathf.Clamp(p.z, -4.5f, 4.5f) );
@@ -98,11 +103,12 @@ public class Fish : MonoBehaviour {
 		transform.Translate(5.0f * transform.up);
 		float angle = Random.Range(0.0f, 360.0f);
 		flyDir = new Vector3(Mathf.Cos(angle), 0.0f, Mathf.Sin(angle)) * 7.0f;
+
+		GameObject.Find("SplashEmitter").transform.GetComponent<SplashEmitter>().Splash(transform.position);
 	}
 
 	private float _escapeTime = 0.0f;
 	public void Escape() {
-		Debug.Log("enable escape");
-		_escapeTime = 2.0f;
+		_escapeTime = 1.4f;
 	}
 }
