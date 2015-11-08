@@ -29,7 +29,7 @@ public class SplashEmitter : MonoBehaviour {
 
 	private IEnumerator SplashCoroutine(GameObject go) {
 		go.SetActive(true);
-		yield return new WaitForSeconds(4.0f);
+		yield return new WaitForSeconds(0.7f);
 		go.SetActive(false);
 	}
 }
